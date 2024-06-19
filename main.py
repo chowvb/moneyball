@@ -25,6 +25,7 @@ def update_endpoints():
         squad_abbr = []
         squad_name = []
         unique_id = []
+        mp = []
 
         for id in table_id:
             table = soup.find("table", id = id)
@@ -87,6 +88,9 @@ def update_endpoints():
                 squad_abbr.append(abbr)
                 squad_name.append(name)
             
+            for i, played in enumerate(df["MP"]):
+                mp.append(played)
+            
 
 
 
@@ -94,44 +98,45 @@ def update_endpoints():
         "Squad" : squad_name,
         "Endpoint_url" : links,
         "unique_id" : unique_id,
-        "Last_5_url" : friendly_matches_links
+        "Last_5_url" : friendly_matches_links,
+        "MP" : mp
     })
 
     endpoint_df.to_json("endpoint.json")
 
-#def get_h2h(h2h_teams_list):
-h2h_teams_list = ["England", "Denmark"]
-h2h_teams = h2h_teams_list  
-endpoint_df = pd.read_json("endpoint.json")
+def get_h2h(h2h_teams_list):
+    h2h_teams_list = ["England", "Denmark"]
+    h2h_teams = h2h_teams_list  
+    endpoint_df = pd.read_json("endpoint.json")
 
-h2h_df = pd.DataFrame()
-for country in h2h_teams:
-    team_name = str(country)
-    last_5_matches_url = endpoint_df["Last_5_url"].loc[endpoint_df["Squad"] == team_name].tolist()
-    last_5_matches_url = last_5_matches_url[0]
-    country_unique_id = endpoint_df["unique_id"].loc[endpoint_df["Squad"] == team_name]
-    country_html_table_id = "stats_" + country_unique_id + "_summary"
-    
-    country_df = pd.DataFrame()
-    for game in last_5_matches_url:
-        print(game)
-        response = requests.get(base_url + game)
-        soup = BeautifulSoup(response.content, "html.parser")
-        if response.status_code == 200:
-            table = soup.find("table", {"id": country_html_table_id})
+    h2h_df = pd.DataFrame()
+    for country in h2h_teams:
+        team_name = str(country)
+        last_5_matches_url = endpoint_df["Last_5_url"].loc[endpoint_df["Squad"] == team_name].tolist()
+        last_5_matches_url = last_5_matches_url[0]
+        country_unique_id = endpoint_df["unique_id"].loc[endpoint_df["Squad"] == team_name]
+        country_html_table_id = "stats_" + country_unique_id + "_summary"
+        
+        country_df = pd.DataFrame()
+        for game in last_5_matches_url:
+            print(game)
+            response = requests.get(base_url + game)
+            soup = BeautifulSoup(response.content, "html.parser")
+            if response.status_code == 200:
+                table = soup.find("table", {"id": country_html_table_id})
 
-            game_df = pd.read_html(str(table))[0]
-            game_df = game_df.droplevel(0, axis = 1)
-            game_df = game_df.drop(columns=["#", "Pos", "Age"])
-            
-            country_df = pd.concat([country_df, game_df])
-            country_df = country_df.groupby("Player", as_index=False).sum()[country_df.columns]
-            country_df = country_df.iloc[2:]
-            country_df["Country"] = country
-        else:
-            print(response.status_code)
-    h2h_df = pd.concat([h2h_df, country_df])
-    #return h2h_df
+                game_df = pd.read_html(str(table))[0]
+                game_df = game_df.droplevel(0, axis = 1)
+                game_df = game_df.drop(columns=["#", "Pos", "Age"])
+                
+                country_df = pd.concat([country_df, game_df])
+                country_df = country_df.groupby("Player", as_index=False).sum()[country_df.columns]
+                country_df = country_df.iloc[2:]
+                country_df["Country"] = country
+            else:
+                print(response.status_code)
+        h2h_df = pd.concat([h2h_df, country_df])
+        #return h2h_df
 
 
 #player_df = get_h2h(["Germany", "Spain"])
