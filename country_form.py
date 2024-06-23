@@ -73,4 +73,4 @@ def get_h2h_comparison(team_1, team_2):
             h2h_df = pd.concat([h2h_df, df], axis = 1)
     return h2h_df 
 
-df = get_h2h_comparison("Albania", "Croatia")
+df = get_h2h_comparison("England", "Denmark")
